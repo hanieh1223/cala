@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_PurchaseRequest" targetNamespace="https://github.com/hanieh1223/cala">
+  <bpmn:process id="Process_PurchaseRequest" name="مدیریت درخواست خرید" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Request" name="شروع"/>
+    <bpmn:userTask id="Task_Request" name="ثبت درخواست خرید"/>
+    <bpmn:scriptTask id="Task_ValidateCalculate" name="اعتبارسنجی و محاسبه مبلغ" scriptFormat="text/x-php">
+      <bpmn:script>اجرای منطق triggers/01_validate_and_calculate.php در Trigger متصل به ProcessMaker؛ این متن صرفاً مرجع است.</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_Amount" name="مبلغ در سقف مجاز است؟" default="Flow_Rejected"/>
+    <bpmn:scriptTask id="Task_RejectPersist" name="ثبت رد خودکار" scriptFormat="text/x-php"/>
+    <bpmn:endEvent id="EndEvent_Rejected" name="پایان — رد خودکار"/>
+    <bpmn:scriptTask id="Task_ApprovePersist" name="ثبت تأیید خودکار" scriptFormat="text/x-php"/>
+    <bpmn:userTask id="Task_ShowResult" name="نمایش نتیجه بررسی"/>
+    <bpmn:userTask id="Task_Payment" name="ثبت پرداخت"/>
+    <bpmn:scriptTask id="Task_PaymentPersist" name="ثبت پرداخت و به‌روزرسانی وضعیت" scriptFormat="text/x-php"/>
+    <bpmn:endEvent id="EndEvent_Success" name="پایان موفق — پرداخت شده"/>
+    <bpmn:sequenceFlow id="Flow_Start_Request" sourceRef="StartEvent_Request" targetRef="Task_Request"/>
+    <bpmn:sequenceFlow id="Flow_Request_Calc" sourceRef="Task_Request" targetRef="Task_ValidateCalculate"/>
+    <bpmn:sequenceFlow id="Flow_Calc_Gateway" sourceRef="Task_ValidateCalculate" targetRef="Gateway_Amount"/>
+    <bpmn:sequenceFlow id="Flow_Rejected" sourceRef="Gateway_Amount" targetRef="Task_RejectPersist">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">TOTAL_AMOUNT &gt; 2000000000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Reject_End" sourceRef="Task_RejectPersist" targetRef="EndEvent_Rejected"/>
+    <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Gateway_Amount" targetRef="Task_ApprovePersist">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">TOTAL_AMOUNT &lt;= 2000000000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Approve_Result" sourceRef="Task_ApprovePersist" targetRef="Task_ShowResult"/>
+    <bpmn:sequenceFlow id="Flow_Result_Payment" sourceRef="Task_ShowResult" targetRef="Task_Payment"/>
+    <bpmn:sequenceFlow id="Flow_Payment_Persist" sourceRef="Task_Payment" targetRef="Task_PaymentPersist"/>
+    <bpmn:sequenceFlow id="Flow_Persist_End" sourceRef="Task_PaymentPersist" targetRef="EndEvent_Success"/>
+  </bpmn:process>
+</bpmn:definitions>
